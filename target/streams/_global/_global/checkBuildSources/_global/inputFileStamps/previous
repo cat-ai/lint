@@ -1,0 +1,1 @@
+["sbt.Task[scala.collection.Seq[scala.Tuple2[java.nio.file.Path, sbt.nio.FileStamp]]]",{"hashes":[["/Users/macbook_air/Desktop/temp_github/lint_concurrent/lint/build.sbt","e59244b5715fb1d5cbbbdd06e7d257597248f445"],["/Users/macbook_air/Desktop/temp_github/lint_concurrent/lint/project/plugins.sbt","8982a072ba4070c7f53f4198a391f8224c460c12"]],"lastModifiedTimes":[]}]
