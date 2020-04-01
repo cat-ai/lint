@@ -12,7 +12,7 @@ object Example extends App {
 
   def microbenchmark[R](name: String, timeUnitStr: String = "ns", iterations: Int = 30)(block: => R): Unit = {
 
-    val factor: Int = timeUnitStr match {
+    val divisor: Int = timeUnitStr match {
       case "ms"  => 1000000
       case "sec" => 1000000000
       case _     => 1
@@ -28,13 +28,13 @@ object Example extends App {
     var result = block
     var t1 = System.nanoTime()
 
-    outPrint("First Run", (t1 - t0) / factor)
+    outPrint("First Run", (t1 - t0) / divisor)
 
     var lst = for (i <- 1 to iterations) yield {
       t0 = System.nanoTime()
       result = block
       t1 = System.nanoTime()
-      outPrint("Run #" + i, (t1 - t0) / factor)
+      outPrint("Run #" + i, (t1 - t0) / divisor)
       t1 - t0
     }
 
@@ -42,10 +42,10 @@ object Example extends App {
 
     println(s"<++++++++++ $name results ++++++++++>")
 
-    outPrint("Max:", lst.max / factor)
-    outPrint("Min:", lst.min / factor)
-    outPrint("Avg:", (lst.sum / lst.length) / factor)
-    outPrint(s"$name execution time: ",  lst.sum / factor)
+    outPrint("Max:", lst.max / divisor)
+    outPrint("Min:", lst.min / divisor)
+    outPrint("Avg:", (lst.sum / lst.length) / divisor)
+    outPrint(s"$name execution time: ",  lst.sum / divisor)
     println
   }
 
