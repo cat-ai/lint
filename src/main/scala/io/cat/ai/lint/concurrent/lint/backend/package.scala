@@ -1,13 +1,29 @@
 package io.cat.ai.lint.concurrent.lint
 
+import io.cat.ai.lint.concurrent.{ProducerConsumerPolicy, SingleProducerSingleConsumer}
+import io.cat.ai.lint.concurrent.alias.Operation
+
+import scala.language.implicitConversions
+
 package object backend {
 
-  abstract class Implicits {
+  protected [concurrent] trait BackendImplicits {
 
-    private def defLintBackend: LintBackend = new DefaultLintBackend(FIFO, sys.runtime.availableProcessors)
+    private val priorityPolicy: ProducerConsumerPolicy = SingleProducerSingleConsumer
 
-    implicit val lintExecutorBackend: AbstractLintExecutorBackend = AbstractLintExecutorBackend()
+    implicit def lintExecutorBackend: AbstractLintExecutorBackend = AbstractLintExecutorBackend()
 
-    implicit val defaultLintBackend: LintBackend = defLintBackend
+    implicit def lintExecutorBackend(operation: Operation): AbstractLintExecutorBackend = AbstractLintExecutorBackend(operation)
+
+    implicit def defaultLintBackend: LintBackend = new DefaultLintBackend(FIFO, priorityPolicy, sys.runtime.availableProcessors)
+
+    implicit def lintBackend(mode: Mode, availableProcessors: Int, nFactor: Int): DefaultLintBackend = new DefaultLintBackend(mode, priorityPolicy, availableProcessors, nFactor)
+
+    implicit def lintBackend(mode: Mode, policy: ProducerConsumerPolicy, availableProcessors: Int, nFactor: Int): DefaultLintBackend = new DefaultLintBackend(mode, policy, availableProcessors, nFactor)
+
+    implicit def lintBackend(mode: Mode, availableProcessors: Int, nFactor: Int, operation: Operation): DefaultLintBackend =
+      new DefaultLintBackend(mode, priorityPolicy, availableProcessors, nFactor)(lintExecutorBackend(operation))
   }
+
+  abstract class Implicits extends BackendImplicits
 }

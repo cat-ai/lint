@@ -1,11 +1,13 @@
 package io.cat.ai.lint.concurrent.lint
 
-import io.cat.ai.lint.concurrent.lint.backend.LintBackend
+import io.cat.ai.lint.concurrent.{Implicits, ProducerConsumerPolicy, SingleProducerSingleConsumer}
+import io.cat.ai.lint.concurrent.alias.Operation
+import io.cat.ai.lint.concurrent.lint.backend._
 import io.cat.ai.lint.control.{Starter, Stoppable}
 
 import scala.language.postfixOps
 
-trait Lint extends Starter[Runnable, Unit] with Stoppable {
+trait Lint extends Starter[Operation, Unit] with Stoppable {
 
   implicit def backend: LintBackend
 
@@ -13,43 +15,48 @@ trait Lint extends Starter[Runnable, Unit] with Stoppable {
 
   override def isStopped: Boolean = backend isStopped
 
-  def -~>(operation: Runnable): Lint
+  def -~>(operation: Operation): Lint
 
-  def *-~>(operations: Runnable*): Lint
-
-  def name: String
+  def *-~>(operations: Operation*): Lint
 
   def activeOperations: Int
 }
 
-private class LintImpl (override val name: String = "")
-                       (implicit lintBackend: LintBackend) extends Lint { self =>
+private class LintImpl(implicit lintBackend: LintBackend) extends Lint { self =>
 
   override implicit def backend: LintBackend = lintBackend
 
-  override def -~>(operation: Runnable): Lint = {
+  override def -~>(operation: Operation): Lint = {
     backend submit operation
     self
   }
 
-  override def *-~>(operations: Runnable*): Lint = {
+  override def *-~>(operations: Operation*): Lint = {
     backend submitBatch(operations:_*)
     self
   }
 
-  override def start(a: Runnable): Unit = self -~> a
+  override def start(a: Operation): Unit = self -~> a
 
   override def activeOperations: Int = backend.executorBackend.runningOperations
 }
 
 object Lint {
 
-  def apply(operation: Runnable)(implicit lintBackend: LintBackend): Lint = {
-    val lint = new LintImpl()
+  private lazy val procs: Int = sys.runtime.availableProcessors
+
+  private lazy val nFactor: Int = 100
+
+  def apply()(implicit lintBackend: LintBackend): Lint = new LintImpl
+
+  def apply(operation: Operation)(implicit lintBackend: LintBackend): Lint = {
+    val lint = new LintImpl
     lint start operation
 
     lint
   }
 
-  def apply(threadsName: String = "")(implicit lintBackend: LintBackend): Lint = new LintImpl(threadsName)
+  def apply(mode: Mode, availableProcessors: Int, nFactor: Int): Lint = new LintImpl()(Implicits.lintBackend(mode, availableProcessors, nFactor))
+
+  def apply(mode: Mode = FIFO, policy: ProducerConsumerPolicy = SingleProducerSingleConsumer): Lint = new LintImpl()(Implicits.lintBackend(mode, policy, procs, nFactor))
 }

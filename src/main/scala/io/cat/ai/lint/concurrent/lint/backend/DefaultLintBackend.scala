@@ -3,23 +3,24 @@ package io.cat.ai.lint.concurrent.lint.backend
 import java.util
 import java.util.concurrent.locks.Lock
 
+import io.cat.ai.lint._
+import io.cat.ai.lint.concurrent._
+import io.cat.ai.lint.concurrent.alias.Operation
 import io.cat.ai.lint.concurrent.atomic.Implicits._
 import io.cat.ai.lint.concurrent.lint._
-import io.cat.ai.lint.concurrent.lint.backend.AbstractLintExecutorBackend.Operation
 import io.cat.ai.lint.concurrent.locks.{SuspendableLock, SuspendableLockMonitor}
-
-import org.jctools.queues.MpscArrayQueue
 
 import scala.language.postfixOps
 
 class DefaultLintBackend(override val mode: Mode,
+                         override val policy: ProducerConsumerPolicy,
                          override val availableProcessorsToJVM: Int,
-                         override val nFactor: Int = 100,
-                         override val threadsName: String = "")
+                         override val nFactor: Int = 100)
                         (implicit abstractLintExecutorBackend: AbstractLintExecutorBackend) extends LintBackend {
 
   override final val suspendableLock: Lock with SuspendableLock = SuspendableLockMonitor()
-  override final val operationQueue: util.Queue[Operation] = new MpscArrayQueue[Operation](maxOperationsCount)
+
+  override final val operationQueue: util.Queue[Operation] = concurrent.queue.ConcurrentQueueFactory[Operation](policy, maxOperationsCount)
 
   override def maxOperationsCount: Int = availableProcessorsToJVM * nFactor
 

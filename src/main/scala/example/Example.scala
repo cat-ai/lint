@@ -1,7 +1,7 @@
 package example
 
 
-import java.util.concurrent.{Executor, Executors}
+import java.util.concurrent.Executors
 
 import io.cat.ai.lint.concurrent.Implicits._
 import io.cat.ai.lint.concurrent.lint.Lint
@@ -18,9 +18,7 @@ object Example extends App {
       case _     => 1
     }
 
-    def outPrint(s: String, t: Long): Unit = {
-      println("%-16s".format(s) + formatter.format(t) + s" $timeUnitStr")
-    }
+    def outPrint(s: String, t: Long): Unit = println("%-16s".format(s) + formatter.format(t) + s" $timeUnitStr")
 
     println(s"$name microbenchmark")
 
@@ -30,40 +28,41 @@ object Example extends App {
 
     outPrint("First Run", (t1 - t0) / divisor)
 
-    var lst = for (i <- 1 to iterations) yield {
-      t0 = System.nanoTime()
-      result = block
-      t1 = System.nanoTime()
-      outPrint("Run #" + i, (t1 - t0) / divisor)
-      t1 - t0
-    }
+    val results =
+      for (i <- 1 to iterations)
+        yield {
+          t0 = System.nanoTime()
+          result = block
+          t1 = System.nanoTime()
+          outPrint("Run #" + i, (t1 - t0) / divisor)
+          t1 - t0
+        }
 
     println
 
     println(s"<++++++++++ $name results ++++++++++>")
 
-    outPrint("Max:", lst.max / divisor)
-    outPrint("Min:", lst.min / divisor)
-    outPrint("Avg:", (lst.sum / lst.length) / divisor)
-    outPrint(s"$name execution time: ",  lst.sum / divisor)
+    outPrint("Max:", results.max / divisor)
+    outPrint("Min:", results.min / divisor)
+    outPrint("Avg:", (results.sum / results.length) / divisor)
+    outPrint(s"$name execution time: ",  results.sum / divisor)
+
     println
   }
 
   val lint = Lint()
 
-  val range = 0 to 10000000
-
   microbenchmark("Lint", "ms", 50) {
-    for (i <- range)
-      lint -~> { () => s"${math sqrt i}" } -~> { () => s"${ math cbrt i}" }
+    for (i <- 0 to 1000000000)
+      lint -~> { () => s"${math sqrt i}" }
   }
 
   lint stop()
 
-  val executorService = Executors.newFixedThreadPool(sys.runtime.availableProcessors())
+  val executorService = Executors.newFixedThreadPool(sys.runtime.availableProcessors)
 
-  microbenchmark("ExecutorService", "ms", 10) {
-    for (i <- range) {
+  microbenchmark("ExecutorService", "ms", 50) {
+    for (i <- 0 to 500000) {
       executorService execute { () => s"${math sqrt i}" }
     }
   }

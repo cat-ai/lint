@@ -10,6 +10,8 @@ import scala.collection.mutable
 
 import AbstractLintExecutorBackend._
 
+import io.cat.ai.lint.concurrent.alias.Operation
+
 import scala.language.postfixOps
 
 /**
@@ -41,13 +43,19 @@ protected[lint] abstract class AbstractLintExecutorBackend protected[backend] (l
 
 object AbstractLintExecutorBackend {
 
-  type Operation = Runnable
-
-  protected[concurrent] val defName: String = "Lint-Thread"
+  protected[concurrent] val defaultName: String = "Lint-Thread"
 
   protected[concurrent] val idLong: FastAtomicLong = new FastAtomicLong
 
-  def apply(threadsName: String = ""): AbstractLintExecutorBackend = new LintExecutorBackendImpl(new mutable.HashSet[Thread]())
+  def apply(): AbstractLintExecutorBackend = new LintExecutorBackendImpl(new mutable.HashSet[Thread]())
+
+  def apply(operation: Operation): AbstractLintExecutorBackend with Starter[Thread, Unit] = {
+    val executorBackend = new LintExecutorBackendImpl(new mutable.HashSet[Thread]())
+
+    executorBackend execute operation
+
+    executorBackend
+  }
 }
 
 protected[lint] final class LintExecutorBackendImpl protected[backend] (lintThreads: mutable.Set[Thread]) extends AbstractLintExecutorBackend(lintThreads) {
@@ -57,7 +65,7 @@ protected[lint] final class LintExecutorBackendImpl protected[backend] (lintThre
   override def execute(operation: Operation): Unit = {
     val lintThread: LintThread = new LintThread(operation) {
 
-      setName(s"$defName-${idLong.incrementAndGet}")
+      setName(s"$defaultName-${idLong.incrementAndGet}")
 
       override def run(): Unit = {
         operation run()
@@ -71,7 +79,7 @@ protected[lint] final class LintExecutorBackendImpl protected[backend] (lintThre
   override def execute(operation: Operation, operation2: Operation): Unit = {
     val lintThread: LintThread = new LintThread(operation) {
 
-      setName(s"$defName-${idLong.incrementAndGet}")
+      setName(s"$defaultName-${idLong.incrementAndGet}")
 
       override def run(): Unit = {
         operation run()
@@ -90,7 +98,7 @@ protected[lint] final class LintExecutorBackendImpl protected[backend] (lintThre
   private def runOperations(operation: Operation, operations: Seq[Operation]): Unit = {
     val lintThread: LintThread = new LintThread(operation) {
 
-      setName(s"$defName-${idLong.incrementAndGet}")
+      setName(s"$defaultName-${idLong.incrementAndGet}")
 
       override def run(): Unit = {
         operation run()
