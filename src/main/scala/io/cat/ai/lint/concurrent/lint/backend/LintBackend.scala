@@ -3,14 +3,18 @@ package io.cat.ai.lint.concurrent.lint.backend
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.Lock
 
-import io.cat.ai.lint.concurrent.ProducerConsumerPolicy
+import io.cat.ai.lint.concurrent.{Mode, ProducerConsumerPolicy}
 import io.cat.ai.lint.concurrent.alias.Operation
-import io.cat.ai.lint.concurrent.lint.Mode
 import io.cat.ai.lint.concurrent.locks.SuspendableLock
 import io.cat.ai.lint.control.Stoppable
 
 import scala.language.postfixOps
 
+/**
+  * Pluggable backend mechanism
+  *
+  * It is responsible for submitting operations from a [[io.cat.ai.lint.concurrent.lint.Lint]] to [[LintExecutorBackend]] to be able to execute tasks
+  * */
 trait LintBackend extends Stoppable {
 
   def availableProcessorsToJVM: Int

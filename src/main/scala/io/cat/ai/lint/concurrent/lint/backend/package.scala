@@ -1,6 +1,6 @@
 package io.cat.ai.lint.concurrent.lint
 
-import io.cat.ai.lint.concurrent.{ProducerConsumerPolicy, SingleProducerSingleConsumer}
+import io.cat.ai.lint.concurrent._
 import io.cat.ai.lint.concurrent.alias.Operation
 
 import scala.language.implicitConversions

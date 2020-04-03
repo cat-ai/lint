@@ -1,17 +1,24 @@
 package io.cat.ai.lint.concurrent.lint
 
-import io.cat.ai.lint.concurrent.{Implicits, ProducerConsumerPolicy, SingleProducerSingleConsumer}
+import io.cat.ai.lint.concurrent._
 import io.cat.ai.lint.concurrent.alias.Operation
 import io.cat.ai.lint.concurrent.lint.backend._
 import io.cat.ai.lint.control.{Starter, Stoppable}
 
 import scala.language.postfixOps
 
+/**
+  * Lint is a contract for achieving concurrency of execution one or more operations
+  *
+  * Lint uses [[LintBackend]] as manager that submits operations and then executes with [[LintExecutorBackend]] based on [[Mode]] principle
+  *
+  * Operations are submitted to the Lint via a queue [[LintBackend.operationQueue]] that depends on policy [[LintBackend.policy]], which holds one or more operations than thread
+  **/
 trait Lint extends Starter[Operation, Unit] with Stoppable {
 
   implicit def backend: LintBackend
 
-  override def stop(): Unit = backend.stop()
+  override def stop(): Unit = backend stop()
 
   override def isStopped: Boolean = backend isStopped
 
@@ -44,7 +51,6 @@ private class LintImpl(implicit lintBackend: LintBackend) extends Lint { self =>
 object Lint {
 
   private lazy val procs: Int = sys.runtime.availableProcessors
-
   private lazy val nFactor: Int = 100
 
   def apply()(implicit lintBackend: LintBackend): Lint = new LintImpl

@@ -7,7 +7,6 @@ import io.cat.ai.lint._
 import io.cat.ai.lint.concurrent._
 import io.cat.ai.lint.concurrent.alias.Operation
 import io.cat.ai.lint.concurrent.atomic.Implicits._
-import io.cat.ai.lint.concurrent.lint._
 import io.cat.ai.lint.concurrent.locks.{SuspendableLock, SuspendableLockMonitor}
 
 import scala.language.postfixOps
@@ -53,14 +52,28 @@ class DefaultLintBackend(override val mode: Mode,
     else {
         mode match {
           case FIFO => operationQueue add operation
-          case LIFO => /*TODO: implement*/ ???
+          case LIFO => /* TODO: implement */ ???
         }
         suspendableLock lock()
         suspendableLock wakeUpWaiting()
         suspendableLock unlock()
       }
 
-  def submitBatch(operations: Operation*): Unit = ???
+  def submitBatch(operations: Operation*): Unit = {
+    val ops = operations filter (_ ne null)
+
+    if (executorBackend.threads.size < availableProcessorsToJVM)
+      executorBackend execute(finiteConditionalOperation, ops)
+    else {
+      mode match {
+        case FIFO => for (op <- ops) operationQueue offer op
+        case LIFO => /* TODO: implement */ ???
+      }
+      suspendableLock lock()
+      suspendableLock wakeUpWaiting()
+      suspendableLock unlock()
+    }
+  }
 
   override def stop(): Unit = {
     for (thread <- executorBackend.threads)
